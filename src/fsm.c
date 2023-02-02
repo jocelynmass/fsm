@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019 Jocelyn Masserot.  All rights reserved.
+ * Copyright (c) 2017-2023 Jocelyn Masserot.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -25,7 +25,6 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * WITH THE SOFTWARE.
  */
-#include "board.h"
 #include "fsm.h"
 #include "port.h"
 
@@ -148,27 +147,3 @@ int32_t fsm_get_current_state(struct fsm_ctx *ctx)
 {
     return ctx->current_state;
 }
-
-#ifdef USE_LIB_SHELL
-
-#include "shell.h"
-
-int32_t shell_cmd_fsm(uint32_t argc, char **argv, void *arg)
-{
-    struct ecko_ctx *ecko = (struct ecko_ctx *)arg;
-    
-	if(argc <= 1)
-		return -2;
-
-	if(strcmp(argv[1], "-g") == 0)
-    {
-        printf("current state = 0x%.4lx\n", fsm_get_current_state(&ecko->fsm));
-    }else{
-		return -2;
-	}
-
-    return 0;
-}
-
-SHELL_REGISTER_CMD(fsm, shell_cmd_fsm, "fsm command", "fsm {[-g]}\n");
-#endif

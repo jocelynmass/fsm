@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020 Jocelyn Masserot.  All rights reserved.
+ * Copyright (c) 2017-2023 Jocelyn Masserot.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -29,7 +29,7 @@
 #ifndef __FSM_H__
 #define __FSM_H__
 
-#include "board.h"
+#include "port.h"
 
 #define FSM_INIT_STATE  	0
 #define FSM_MBOX_NB			16
