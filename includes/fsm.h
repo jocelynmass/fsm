@@ -45,7 +45,7 @@ struct fsm_trans
 struct fsm_ctx
 {
     uint32_t current_state;
-	QueueHandle_t mbox;
+	fsm_queue_t mbox;
 	void *arg;
 };
 
