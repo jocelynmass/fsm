@@ -1,0 +1,19 @@
+pkg.name: fsm
+pkg.description: Simple Finite-State Machine
+pkg.author: "Jocelyn Masserot <jocemass@gmail.com>"
+pkg.homepage: "https://github.com/jocelynmass/fsm"
+pkg.keywords:
+    - fsm
+
+pkg.type: sdk
+
+pkg.cflags:
+    - "-I@fsm/includes"
+    - "-I@fsm/port"
+    - "-DFSM_MYNEWT_PORT"
+
+pkg.deps:
+    - "@apache-mynewt-core/kernel/os"
+
+pkg.include_dirs:
+    - src

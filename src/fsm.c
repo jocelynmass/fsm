@@ -79,8 +79,8 @@ int32_t fsm_init(struct fsm_ctx *ctx, void *arg)
         return -1;
     }
 
-    FSM_QUEUE_DEF(queue_def, FSM_MBOX_NB, sizeof(uint32_t));
-    ctx->mbox = fsm_queue_new(&queue_def);
+    FSM_QUEUE_DEF(fsm_q, FSM_MBOX_NB, sizeof(uint32_t));
+    ctx->mbox = fsm_queue_new(&fsm_q);
 
     return fsm->enter_state(ctx, 0);
 }
@@ -112,7 +112,7 @@ int32_t fsm_process(struct fsm_ctx *ctx)
 
     while(1)
     {
-        if(fsm_queue_receive(ctx->mbox, &event_id) == pdPASS)
+        if(fsm_queue_receive(ctx->mbox, &event_id) == 0)
         {
             new_state = fsm_get_new_state_id(ctx, event_id);
 

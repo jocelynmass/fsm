@@ -33,6 +33,14 @@
 #include "freertos_port.h"
 #endif
 
+#ifdef FSM_MYNEWT_PORT 
+#include "mynewt_port.h"
+#endif
+
+#ifndef log_err
+#define log_err(...)
+#endif
+
 static inline int fsm_queue_receive(fsm_queue_t queue, void *data);
 static inline int fsm_queue_send(fsm_queue_t queue, void *data, bool isr);
 static inline fsm_queue_t fsm_queue_new(fsm_queue_def_t *def);
