@@ -34,6 +34,8 @@ Example
 
 In this example, we'll implement the following state machine:
 
+.. image:: https://github.com/jocelynmass/fsm/blob/main/img/fsm_example.png
+  
 .. code-block:: c
 
   #include "fsm.h"
