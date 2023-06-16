@@ -52,14 +52,14 @@ In this example, we'll implement the following state machine:
   {
       // Check if the event needs to be proceed by the state machine
       if(fsm_filter(&g_fsm, evt) == 0)
-    {
-      if(mcu_in_isr())
       {
-        fsm_post_event_isr(&g_fsm, evt);
-      }else{
-        fsm_post_event(&g_fsm, evt);
+        if(mcu_in_isr())
+        {
+          fsm_post_event_isr(&g_fsm, evt);
+        }else{
+          fsm_post_event(&g_fsm, evt);
+        }
       }
-    }
   }
 
   static int32_t init_state_check(struct fsm_ctx *fsm, uint32_t state)
