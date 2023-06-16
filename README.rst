@@ -149,3 +149,20 @@ In this example, we'll implement the following state machine:
       fsm_init(&g_fsm, NULL);
       fsm_process(&g_fsm);
   }
+  
+Output:
+
+.. code-block:: bash
+  
+  main
+  init_state_check
+  init_enter_state
+  init_exit_state
+  state1_state_check
+  state1_enter_state
+  state1_exit_state
+  state2_state_check
+  state2_enter_state
+  state2_exit_state
+  state1_state_check
+  ...
