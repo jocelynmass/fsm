@@ -7,7 +7,7 @@ Simple Finite-State Machine that can be used with embedded systems
 Setup
 ------------
 
-To work with your project, two dedicated section have to be added to your linker script. One to store the different state and one other to store the possible state transitions:
+To work with your project, two dedicated sections have to be added to your linker script. One to store the different states and one other to store the possible state transitions:
 
 .. code-block:: c
 
@@ -35,7 +35,7 @@ Example
 In this example, we'll implement the following state machine:
 
 .. image:: https://github.com/jocelynmass/fsm/blob/main/img/fsm_example.png
-  
+  :width: 400
 .. code-block:: c
 
   #include "fsm.h"
