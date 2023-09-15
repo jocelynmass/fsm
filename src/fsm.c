@@ -30,20 +30,34 @@
 
 #define FSM_TAG             "FSM"
 
-extern unsigned long _fsm_start;   /* start address for the .svc section. defined in linker script */
-extern unsigned long _fsm_end;     /* end address for the .svc section. defined in linker script */
-extern unsigned long _fsm_trans_start;   /* start address for the .svc section. defined in linker script */
-extern unsigned long _fsm_trans_end;     /* end address for the .svc section. defined in linker script */
+extern unsigned long _fsm_start;   /* start address for the .fsm_state section. defined in linker script */
+extern unsigned long _fsm_end;     /* end address for the .fsm_state section. defined in linker script */
+extern unsigned long _fsm_trans_start;   /* start address for the .fsm_trans section. defined in linker script */
+extern unsigned long _fsm_trans_end;     /* end address for the .fsm_trans section. defined in linker script */
+extern unsigned long _fsm_evt_start;   /* start address for the .fsm_evt section. defined in linker script */
+extern unsigned long _fsm_evt_end;     /* end address for the .fsm_evt section. defined in linker script */
 
-static struct fsm_state *fsm_get_state(struct fsm_ctx *ctx, uint32_t state)
+struct fsm_state *fsm_get_state(struct fsm_ctx *ctx, uint32_t state)
 {
     struct fsm_state *fsm;
     
-    for(fsm = (struct fsm_state *)&_fsm_start ; fsm < (struct fsm_state *)&_fsm_end ; fsm++)
-    {
-        if(fsm->state == state)
-        {
+    for(fsm = (struct fsm_state *)&_fsm_start ; fsm < (struct fsm_state *)&_fsm_end ; fsm++){
+        if(fsm->state == state){
             return fsm;
+        }
+    }
+
+    return NULL;
+}
+
+static struct fsm_evt *fsm_get_free_event(struct fsm_ctx *ctx, uint32_t evt)
+{
+    struct fsm_evt *event;
+    
+    for(event = (struct fsm_evt *)&_fsm_evt_start ; event < (struct fsm_evt *)&_fsm_evt_end ; event++)
+    {   
+        if(evt == event->trigger){
+            return event;
         }
     }
 
@@ -56,13 +70,34 @@ static int32_t fsm_get_new_state_id(struct fsm_ctx *ctx, uint32_t evt)
     
     for(trans = (struct fsm_trans *)&_fsm_trans_start ; trans < (struct fsm_trans *)&_fsm_trans_end ; trans++)
     {   
-        if(ctx->current_state == trans->from_state && evt == trans->trigger)
-        {
-            return trans->to_state;
+        if((evt == trans->trigger) && trans->return_prev){
+            return ctx->prev_state;
+        }else{
+            if(((ctx->current_state == trans->from_state) || (trans->from_state == FSM_ANY_STATE)) && evt == trans->trigger)
+            {
+                if((ctx->current_state == trans->to_state)){
+                    return -1;
+                }
+                return trans->to_state;
+            }
         }
     }
 
     return -1;
+}
+
+static bool fsm_handle_free_event(struct fsm_ctx *ctx, uint32_t evt)
+{
+    struct fsm_evt *event;
+    
+    event = fsm_get_free_event(ctx, evt);
+
+    if(event){
+        event->cb(ctx, evt);
+        return true;
+    }
+
+    return false;
 }
 
 int32_t fsm_init(struct fsm_ctx *ctx, void *arg)
@@ -70,7 +105,6 @@ int32_t fsm_init(struct fsm_ctx *ctx, void *arg)
     struct fsm_state *fsm;
 
     ctx->current_state = FSM_INIT_STATE;
-
     ctx->arg = arg;
     fsm = fsm_get_state(ctx, ctx->current_state);
     if(fsm == NULL)
@@ -87,10 +121,23 @@ int32_t fsm_init(struct fsm_ctx *ctx, void *arg)
 
 int32_t fsm_filter(struct fsm_ctx *ctx, uint32_t event_id)
 {
-    if(fsm_get_new_state_id(ctx, event_id) != -1)
-    {
+    struct fsm_state *state;
+
+    if(fsm_get_free_event(ctx, event_id) != NULL){
+        // A free event is an event that is independent 
+        // to the state the firmware is currently in
         return 0;
     }
+
+    if(fsm_get_new_state_id(ctx, event_id) != -1){
+        return 0;
+    }
+
+    state = fsm_get_state(ctx, ctx->current_state);
+    if(state->event_rcvd){
+        state->event_rcvd(ctx, event_id);
+    }
+
     return -1;
 }
 
@@ -114,29 +161,30 @@ int32_t fsm_process(struct fsm_ctx *ctx)
     {
         if(fsm_queue_receive(ctx->mbox, &event_id) == 0)
         {
-            new_state = fsm_get_new_state_id(ctx, event_id);
+            if(fsm_handle_free_event(ctx, event_id) == false){
+                new_state = fsm_get_new_state_id(ctx, event_id);
 
-            if(new_state == -1)
-            {
-                //log_warn(FSM_TAG, "no state found for evt 0x%x\n", evt);
-                continue;
-            }
+                if(new_state == -1){
+                    continue;
+                }
 
-            state = fsm_get_state(ctx, ctx->current_state);
-            // Exit current state
-            if(state->exit_state)
-            {
-                state->exit_state(ctx, event_id);
-            }
+                state = fsm_get_state(ctx, ctx->current_state);
+                // Exit current state
+                if(state->exit_state)
+                {
+                    state->exit_state(ctx, event_id);
+                }
+                
+                ctx->prev_state = ctx->current_state;
 
-            state = fsm_get_state(ctx, new_state);
-            // Enter new state
-            if(state->enter_state)
-            {
-                ctx->current_state = new_state;
-                state->enter_state(ctx, event_id);
+                state = fsm_get_state(ctx, new_state);
+                // Enter new state
+                if((state != NULL) && state->enter_state)
+                {
+                    ctx->current_state = new_state;
+                    state->enter_state(ctx, event_id);
+                }
             }
-        
         }   
     }
 
@@ -146,4 +194,9 @@ int32_t fsm_process(struct fsm_ctx *ctx)
 int32_t fsm_get_current_state(struct fsm_ctx *ctx)
 {
     return ctx->current_state;
+}
+
+void fsm_update_prev_state(struct fsm_ctx *ctx, uint32_t state)
+{
+    ctx->prev_state = state;
 }
