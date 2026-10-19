@@ -93,7 +93,9 @@ static bool fsm_handle_free_event(struct fsm_ctx *ctx, uint32_t evt)
     event = fsm_get_free_event(ctx, evt);
 
     if(event){
-        event->cb(ctx, evt);
+        if(event->cb){
+            event->cb(ctx, evt);
+        }
         return true;
     }
 
@@ -105,6 +107,7 @@ int32_t fsm_init(struct fsm_ctx *ctx, void *arg)
     struct fsm_state *fsm;
 
     ctx->current_state = FSM_INIT_STATE;
+    ctx->prev_state = FSM_INIT_STATE;
     ctx->arg = arg;
     fsm = fsm_get_state(ctx, ctx->current_state);
     if(fsm == NULL)
@@ -116,7 +119,7 @@ int32_t fsm_init(struct fsm_ctx *ctx, void *arg)
     FSM_QUEUE_DEF(fsm_q, FSM_MBOX_NB, sizeof(uint32_t));
     ctx->mbox = fsm_queue_new(&fsm_q);
 
-    return fsm->enter_state(ctx, 0);
+    return fsm->enter_state ? fsm->enter_state(ctx, 0) : 0;
 }
 
 int32_t fsm_filter(struct fsm_ctx *ctx, uint32_t event_id)
@@ -134,7 +137,7 @@ int32_t fsm_filter(struct fsm_ctx *ctx, uint32_t event_id)
     }
 
     state = fsm_get_state(ctx, ctx->current_state);
-    if(state->event_rcvd){
+    if(state && state->event_rcvd){
         state->event_rcvd(ctx, event_id);
     }
 
@@ -153,9 +156,10 @@ int32_t fsm_post_event_isr(struct fsm_ctx *ctx, uint32_t event_id)
 
 int32_t fsm_process(struct fsm_ctx *ctx)
 {
-    uint32_t new_state;
+    int32_t new_state;
     uint32_t event_id;
     struct fsm_state *state;
+    struct fsm_state *next;
 
     while(1)
     {
@@ -168,21 +172,27 @@ int32_t fsm_process(struct fsm_ctx *ctx)
                     continue;
                 }
 
+                next = fsm_get_state(ctx, new_state);
+                if(next == NULL){
+                    // Stay in the current state rather than exit it for nothing
+                    log_err(FSM_TAG, "event %u leads to unknown state %d\n", event_id, new_state);
+                    continue;
+                }
+
                 state = fsm_get_state(ctx, ctx->current_state);
                 // Exit current state
-                if(state->exit_state)
+                if(state && state->exit_state)
                 {
                     state->exit_state(ctx, event_id);
                 }
-                
-                ctx->prev_state = ctx->current_state;
 
-                state = fsm_get_state(ctx, new_state);
+                ctx->prev_state = ctx->current_state;
+                ctx->current_state = new_state;
+
                 // Enter new state
-                if((state != NULL) && state->enter_state)
+                if(next->enter_state)
                 {
-                    ctx->current_state = new_state;
-                    state->enter_state(ctx, event_id);
+                    next->enter_state(ctx, event_id);
                 }
             }
         }   
