@@ -1,0 +1,17 @@
+config ZEPHYR_FSM_MODULE
+	bool
+
+config FSM
+	bool "Finite State Machine Support"
+	depends on ZEPHYR_FSM_MODULE
+	help
+	  This option enables the Finite State Machine library
+
+if FSM
+    config FSM_MBOX_NB
+		int "Event queue depth"
+		default 16
+		help
+		  Number of events fsm_post_event() can queue before blocking.
+
+endif # FSM

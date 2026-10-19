@@ -33,7 +33,11 @@
 
 #define FSM_ANY_STATE		0
 #define FSM_INIT_STATE  	1
+#ifdef CONFIG_FSM_MBOX_NB
+#define FSM_MBOX_NB			CONFIG_FSM_MBOX_NB
+#else
 #define FSM_MBOX_NB			16
+#endif
 
 struct fsm_trans
 {

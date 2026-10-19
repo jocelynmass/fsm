@@ -1,0 +1,4 @@
+name: fsm
+build:
+  cmake: .
+  kconfig: Kconfig.fsm

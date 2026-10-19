@@ -29,12 +29,14 @@
 #ifndef __FSM_PORT_H__
 #define __FSM_PORT_H__
 
-#ifdef FSM_FREERTOS_PORT 
-#include "freertos_port.h"
-#endif
-
-#ifdef FSM_MYNEWT_PORT 
-#include "mynewt_port.h"
+#if defined(FSM_FREERTOS_PORT)
+#include "freertos/freertos_port.h"
+#elif defined(FSM_MYNEWT_PORT)
+#include "mynewt/mynewt_port.h"
+#elif defined(WITH_ZEPHYR)
+#include "zephyr/zephyr_port.h"
+#else
+#error "missing fsm port definition"
 #endif
 
 #ifndef log_err
